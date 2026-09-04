@@ -16,7 +16,6 @@ def home():
 @app.route('/predict/<coin_symbol>', methods=['GET'])
 def predict(coin_symbol):
     try:
-        # User jo bhi symbol de (e.g., doge, sol), uske aage '-USD' lagakar live data uthao
         ticker = f"{coin_symbol.upper()}-USD"
         
         # 150 days ka data fetch karna
@@ -40,12 +39,14 @@ def predict(coin_symbol):
         model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
         model.fit(X, y)
         
+        # FIX: Ensure latest features is strictly a 2D array using .reshape()
         last_row = df.iloc[-1]
-        latest_features = np.array([[
+        latest_features = np.array([
             last_row['Open'], last_row['High'], last_row['Low'], 
             last_row['Close'], last_row['Volume'], 
             last_row['SMA_7'], last_row['SMA_14'], last_row['Volatility']
-        ]])
+        ]).reshape(1, -1)
+        
         predicted_price = model.predict(latest_features)[0]
         
         today = datetime.now()
@@ -55,7 +56,7 @@ def predict(coin_symbol):
             "coin": coin_symbol.upper(),
             "current_date": today.strftime("%Y-%m-%d"),
             "target_date": tomorrow.strftime("%Y-%m-%d"),
-            "last_close_price": round(float(last_row['Close']), 4), # Chote coins (jaise DOGE) ke liye 4 decimals
+            "last_close_price": round(float(last_row['Close']), 4),
             "predicted_price": round(float(predicted_price), 4)
         })
 
