@@ -3,7 +3,7 @@ from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 
 app = Flask(__name__)
@@ -18,35 +18,29 @@ def predict(coin_symbol):
     try:
         ticker = f"{coin_symbol.upper()}-USD"
         
-        # 150 days ka data fetch karna
-        df = yf.download(ticker, period="150d", interval="1d")
+        # Fetching 100 days of market data
+        df = yf.download(ticker, period="100d", interval="1d")
         
         if df.empty:
             return jsonify({"error": f"Coin symbol '{coin_symbol.upper()}' not found. Try BTC, SOL, DOGE, etc."}), 404
 
-        # Advanced Pro-Trader Logic
-        df['SMA_7'] = df['Close'].rolling(window=7).mean()
-        df['SMA_14'] = df['Close'].rolling(window=14).mean()
-        df['Volatility'] = df['Close'].rolling(window=7).std()
+        # Preparing data
         df['Target'] = df['Close'].shift(-1)
-        
         df.dropna(inplace=True)
         
-        features = ['Open', 'High', 'Low', 'Close', 'Volume', 'SMA_7', 'SMA_14', 'Volatility']
-        X = df[features].values
+        X = df[['Open', 'High', 'Low', 'Close', 'Volume']].values
         y = df['Target'].values
         
-        model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+        # Stable Random Forest AI Model
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
         
-        # FIX: Ensure latest features is strictly a 2D array using .reshape()
+        # Predict Tomorrow's Price using TODAY'S closing data
         last_row = df.iloc[-1]
-        latest_features = np.array([
+        latest_features = np.array([[
             last_row['Open'], last_row['High'], last_row['Low'], 
-            last_row['Close'], last_row['Volume'], 
-            last_row['SMA_7'], last_row['SMA_14'], last_row['Volatility']
-        ]).reshape(1, -1)
-        
+            last_row['Close'], last_row['Volume']
+        ]])
         predicted_price = model.predict(latest_features)[0]
         
         today = datetime.now()
