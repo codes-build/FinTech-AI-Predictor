@@ -18,29 +18,35 @@ def predict(coin_symbol):
     try:
         ticker = f"{coin_symbol.upper()}-USD"
         
-        # Fetching 100 days of market data
+        # 1. Fetching market data
         df = yf.download(ticker, period="100d", interval="1d")
         
         if df.empty:
             return jsonify({"error": f"Coin symbol '{coin_symbol.upper()}' not found. Try BTC, SOL, DOGE, etc."}), 404
 
-        # Preparing data
+        # FIX 1: yfinance multi-level format ko single level mein convert karna
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        # FIX 2: Aaj ka data safe jagah store karna (BEFORE dropping NA)
+        features = ['Open', 'High', 'Low', 'Close', 'Volume']
+        
+        # .iloc[-1:] hamesha ek 2D array return karega, 3D error kabhi nahi aayegi
+        latest_features = df[features].iloc[-1:].values 
+        last_close = float(df['Close'].iloc[-1])
+
+        # 2. Preparing data for AI Training
         df['Target'] = df['Close'].shift(-1)
         df.dropna(inplace=True)
         
-        X = df[['Open', 'High', 'Low', 'Close', 'Volume']].values
+        X = df[features].values
         y = df['Target'].values
         
-        # Stable Random Forest AI Model
+        # 3. Stable Random Forest AI Model
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
         
-        # Predict Tomorrow's Price using TODAY'S closing data
-        last_row = df.iloc[-1]
-        latest_features = np.array([[
-            last_row['Open'], last_row['High'], last_row['Low'], 
-            last_row['Close'], last_row['Volume']
-        ]])
+        # 4. Predict Tomorrow's Price accurately
         predicted_price = model.predict(latest_features)[0]
         
         today = datetime.now()
@@ -50,11 +56,12 @@ def predict(coin_symbol):
             "coin": coin_symbol.upper(),
             "current_date": today.strftime("%Y-%m-%d"),
             "target_date": tomorrow.strftime("%Y-%m-%d"),
-            "last_close_price": round(float(last_row['Close']), 4),
+            "last_close_price": round(last_close, 4),
             "predicted_price": round(float(predicted_price), 4)
         })
 
     except Exception as e:
+        print(f"Error Backend: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
