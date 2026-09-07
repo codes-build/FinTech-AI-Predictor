@@ -8,7 +8,6 @@
     <meta name="description" content="Quantum AI - Live Cryptocurrency Price Predictor by Omie. Get real-time AI predictions for BTC, SOL, DOGE and the entire crypto market.">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- LOCKED STABLE VERSION: Taki chart kabhi crash na ho -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>
@@ -29,8 +28,6 @@
             transform: translate(-50%, -50%);
             z-index: 0; 
         }
-
-        /* Ticker Animation */
         .ticker-wrap {
             width: 100%;
             overflow: hidden;
@@ -54,7 +51,7 @@
 </head>
 <body class="font-sans overflow-x-hidden min-h-screen relative pt-14">
 
-    <!-- 1. LIVE MARKET TICKER -->
+    <!-- LIVE MARKET TICKER -->
     <div class="ticker-wrap h-10 flex items-center">
         <div class="ticker text-xs font-mono font-bold tracking-widest text-gray-300" id="liveTicker">
             Loading Live Market Data from Binance...
@@ -66,7 +63,7 @@
     <div class="fixed inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.2)_0%,_rgba(3,7,18,0.9)_100%)] z-0"></div>
     <div class="glow-orb"></div> 
 
-    <!-- 2. MAIN TRADING DASHBOARD -->
+    <!-- MAIN DASHBOARD -->
     <div class="relative z-10 p-4 lg:p-6 flex flex-col lg:flex-row gap-6">
         
         <!-- LEFT PANEL: TradingView Chart Area -->
@@ -76,10 +73,17 @@
                     <span class="text-cyan-400 font-bold tracking-widest uppercase" id="chartTitle">MARKET CHART</span>
                     <span class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30 animate-pulse">BINANCE LIVE</span>
                 </div>
+                
+                <!-- NEW: TIMEFRAME FILTERS -->
+                <div class="text-xs flex gap-4 font-bold tracking-widest" id="timeframeSelector">
+                    <span class="cursor-pointer text-gray-400 hover:text-white transition" onclick="changeTimeframe('1D', this)">1D</span>
+                    <span class="cursor-pointer text-gray-400 hover:text-white transition" onclick="changeTimeframe('1W', this)">1W</span>
+                    <span class="cursor-pointer text-cyan-400 transition" onclick="changeTimeframe('1M', this)">1M</span>
+                    <span class="cursor-pointer text-gray-400 hover:text-white transition" onclick="changeTimeframe('1Y', this)">1Y</span>
+                </div>
             </div>
             
             <div id="tvchart" class="flex-grow relative w-full h-[450px]">
-                <!-- Placeholder Loader -->
                 <div id="chartPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10 bg-[#030712]/80 backdrop-blur-sm">
                     <div class="w-12 h-12 border-4 border-gray-700 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
                     <p class="tracking-widest text-sm uppercase" id="chartLoadingText">Enter Ticker to Load Chart...</p>
@@ -115,7 +119,6 @@
                     </div>
                 </div>
 
-                <!-- REAL: AI Signals & Confidence -->
                 <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
                     <div class="flex justify-between text-[10px] text-gray-400 uppercase tracking-widest mb-2">
                         <span>AI Signal</span>
@@ -136,7 +139,6 @@
                 </button>
             </div>
             
-            <!-- Paper Trading Terminal -->
             <div class="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl">
                 <h2 class="text-xs text-gray-400 tracking-widest uppercase mb-4 text-center">Paper Trading Terminal</h2>
                 <div class="flex gap-4">
@@ -153,47 +155,40 @@
     </div>
 
     <script>
-        // --- 1. LIVE TICKER LOGIC ---
+        // --- TICKER ---
         async function fetchLiveTicker() {
             try {
-                const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","DOGEUSDT","BNBUSDT","XRPUSDT","ADAUSDT","SHIBUSDT"]');
+                const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","DOGEUSDT","BNBUSDT"]');
                 const data = await response.json();
                 let tickerHtml = '';
-                
                 data.forEach(coin => {
                     const symbol = coin.symbol.replace('USDT', '');
                     const price = parseFloat(coin.lastPrice).toFixed(4);
                     const change = parseFloat(coin.priceChangePercent);
                     const colorClass = change >= 0 ? 'text-green-400' : 'text-red-400';
                     const sign = change >= 0 ? '+' : '';
-                    
-                    tickerHtml += `<span class="mx-6">
-                        <span class="text-white">${symbol}</span> 
-                        <span class="text-gray-400">$${price}</span> 
-                        <span class="${colorClass}">${sign}${change.toFixed(2)}%</span>
-                    </span> | `;
+                    tickerHtml += `<span class="mx-6"><span class="text-white">${symbol}</span> <span class="text-gray-400">$${price}</span> <span class="${colorClass}">${sign}${change.toFixed(2)}%</span></span> | `;
                 });
-                
                 document.getElementById('liveTicker').innerHTML = tickerHtml + tickerHtml;
-            } catch (error) {
-                console.error("Ticker Error:", error);
-            }
+            } catch (error) { console.error(error); }
         }
         fetchLiveTicker();
-        setInterval(fetchLiveTicker, 10000); // Har 10 sec mein update
+        setInterval(fetchLiveTicker, 10000);
 
-        // --- 2. TRADINGVIEW CHART & LIVE WEBSOCKET LOGIC ---
+        // --- CHART, TIMEFRAME & WEBSOCKET LOGIC ---
         let chart = null;
         let candlestickSeries = null;
         let binanceSocket = null;
+        
+        // Default settings (1 Month view)
+        let currentInterval = '4h'; 
+        let currentLimit = 180;
+        let currentActiveCoin = ''; 
 
         function initChart() {
-            if (chart !== null) return; // Sirf ek baar banega, crash proof!
+            if (chart !== null) return; 
 
             const chartContainer = document.getElementById('tvchart');
-            const placeholder = document.getElementById('chartPlaceholder');
-            if(placeholder) placeholder.style.display = 'none';
-
             chart = LightweightCharts.createChart(chartContainer, {
                 width: chartContainer.clientWidth,
                 height: 450,
@@ -203,51 +198,63 @@
             });
 
             candlestickSeries = chart.addCandlestickSeries({
-                upColor: '#4ade80', downColor: '#f87171', 
-                borderVisible: false, wickUpColor: '#4ade80', wickDownColor: '#f87171'
+                upColor: '#4ade80', downColor: '#f87171', borderVisible: false, wickUpColor: '#4ade80', wickDownColor: '#f87171'
             });
 
-            window.addEventListener('resize', () => {
-                if(chart) chart.resize(chartContainer.clientWidth, 450);
+            window.addEventListener('resize', () => { if(chart) chart.resize(chartContainer.clientWidth, 450); });
+        }
+
+        // TIMEFRAME CHANGER LOGIC
+        function changeTimeframe(tf, element) {
+            // Update Colors
+            const buttons = document.querySelectorAll('#timeframeSelector span');
+            buttons.forEach(btn => {
+                btn.classList.remove('text-cyan-400');
+                btn.classList.add('text-gray-400');
             });
+            element.classList.remove('text-gray-400');
+            element.classList.add('text-cyan-400');
+
+            // Set Data Rules
+            if (tf === '1D') { currentInterval = '5m'; currentLimit = 288; } // 24 hours (5 min candles -> moves fast!)
+            else if (tf === '1W') { currentInterval = '1h'; currentLimit = 168; } // 1 week (1 hour candles)
+            else if (tf === '1M') { currentInterval = '4h'; currentLimit = 180; } // 1 month (4 hour candles)
+            else if (tf === '1Y') { currentInterval = '1d'; currentLimit = 365; } // 1 year (1 day candles)
+
+            // Reload chart with new timeframe if a coin is already searched
+            if (currentActiveCoin !== '') {
+                loadChartData(currentActiveCoin);
+            }
         }
 
         async function loadChartData(coinSymbol) {
             try {
                 initChart(); 
-                
+                currentActiveCoin = coinSymbol; // Yaad rakho kaunsa coin dekh rahe hain
+
                 const symbol = (coinSymbol === 'btc' ? 'BTC' : coinSymbol.toUpperCase()) + 'USDT';
                 
-                // STEP A: Fetch Historical Data (Last 100 Days)
-                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1d&limit=100`);
+                // Fetch Data with Selected Timeframe
+                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${currentInterval}&limit=${currentLimit}`);
                 if (!response.ok) throw new Error("Chart Data Not Found");
                 
                 const data = await response.json();
                 const chartData = data.map(d => ({
-                    time: d[0] / 1000,
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4])
+                    time: d[0] / 1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4])
                 }));
                 
                 candlestickSeries.setData(chartData);
-                
                 const placeholder = document.getElementById('chartPlaceholder');
                 if(placeholder) placeholder.style.display = 'none';
 
-                // STEP B: Start Live Real-Time WebSockets
-                if(binanceSocket) {
-                    binanceSocket.close(); // Purana connection band karo agar naya coin dhunda hai
-                }
-
-                binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1d`);
+                // Real-Time WebSockets
+                if(binanceSocket) binanceSocket.close(); 
+                binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${currentInterval}`);
                 
                 binanceSocket.onmessage = function (event) {
                     const message = JSON.parse(event.data);
                     const kline = message.k;
                     
-                    // Live candle update hogi (Ultra-Live effect!)
                     candlestickSeries.update({
                         time: kline.t / 1000,
                         open: parseFloat(kline.o),
@@ -256,13 +263,10 @@
                         close: parseFloat(kline.c)
                     });
                 }
-
-            } catch (error) {
-                console.error("Chart Error:", error);
-            }
+            } catch (error) { console.error(error); }
         }
 
-        // --- 3. AI PREDICTION LOGIC ---
+        // --- AI PREDICTION LOGIC ---
         async function getPrediction() {
             const coinInput = document.getElementById('coinSelector').value.trim().toLowerCase();
             if(!coinInput) return;
@@ -283,23 +287,19 @@
                     const tradeSignal = data.trade_signal || "PROCESSING";
                     
                     signalElement.innerText = tradeSignal;
-                    if(tradeSignal.includes('BUY')) {
-                        signalElement.className = 'text-green-400 font-extrabold tracking-widest';
-                    } else if(tradeSignal.includes('SELL')) {
-                        signalElement.className = 'text-red-400 font-extrabold tracking-widest';
-                    } else {
-                        signalElement.className = 'text-yellow-400 font-extrabold tracking-widest';
-                    }
+                    if(tradeSignal.includes('BUY')) signalElement.className = 'text-green-400 font-extrabold tracking-widest';
+                    else if(tradeSignal.includes('SELL')) signalElement.className = 'text-red-400 font-extrabold tracking-widest';
+                    else signalElement.className = 'text-yellow-400 font-extrabold tracking-widest';
 
                     const conf = data.confidence_score || 0;
                     document.getElementById('aiConfidenceText').innerText = conf + '%';
                     document.getElementById('aiConfidenceBar').style.width = conf + '%';
 
-                    // Jaise hi AI prediction aa jaye, Chart aur WebSockets chalu kar do!
+                    // Load chart
                     loadChartData(actualCoin);
                 }
             } catch (error) {
-                console.log("Prediction Error:", error);
+                console.log(error);
                 document.getElementById('aiSignalText').innerText = 'SYS_ERROR';
                 document.getElementById('aiSignalText').className = 'text-red-500 font-bold';
             } finally {
