@@ -47,6 +47,14 @@
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
+        
+        /* Smooth color transition for live prices */
+        #currentPrice {
+            transition: color 0.2s ease-out, text-shadow 0.2s ease-out;
+        }
+        #liveBadge {
+            transition: background-color 0.1s ease-out, color 0.1s ease-out;
+        }
     </style>
 </head>
 <body class="font-sans overflow-x-hidden min-h-screen relative pt-14">
@@ -71,10 +79,10 @@
             <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
                 <div class="flex items-center gap-3">
                     <span class="text-cyan-400 font-bold tracking-widest uppercase" id="chartTitle">MARKET CHART</span>
-                    <span class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30 animate-pulse">BINANCE LIVE</span>
+                    <span id="liveBadge" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30">BINANCE LIVE</span>
                 </div>
                 
-                <!-- NEW: TIMEFRAME FILTERS -->
+                <!-- TIMEFRAME FILTERS -->
                 <div class="text-xs flex gap-4 font-bold tracking-widest" id="timeframeSelector">
                     <span class="cursor-pointer text-gray-400 hover:text-white transition" onclick="changeTimeframe('1D', this)">1D</span>
                     <span class="cursor-pointer text-gray-400 hover:text-white transition" onclick="changeTimeframe('1W', this)">1W</span>
@@ -108,14 +116,15 @@
                 <input type="text" id="coinSelector" value="BTC" placeholder="ENTER TICKER" 
                     class="w-full bg-black/60 text-cyan-300 font-bold p-4 rounded-xl focus:outline-none border border-white/20 focus:border-cyan-400 text-center mb-4 uppercase tracking-widest">
 
+                <!-- TICK-BY-TICK PRICE CARD -->
                 <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
                     <div class="flex justify-between items-center mb-2 text-[10px] text-gray-400 uppercase tracking-widest">
-                        <p>LAST CLOSE</p>
+                        <p>LIVE MARKET PRICE</p>
                         <p class="text-cyan-400">AI TARGET</p>
                     </div>
                     <div class="flex justify-between items-center">
-                        <p class="text-xl text-white" id="currentPrice">--</p>
-                        <p class="text-2xl font-bold text-green-400" id="predictedPrice">--</p>
+                        <p class="text-xl text-white font-mono font-bold" id="currentPrice">--</p>
+                        <p class="text-2xl font-bold text-green-400 font-mono" id="predictedPrice">--</p>
                     </div>
                 </div>
 
@@ -204,9 +213,7 @@
             window.addEventListener('resize', () => { if(chart) chart.resize(chartContainer.clientWidth, 450); });
         }
 
-        // TIMEFRAME CHANGER LOGIC
         function changeTimeframe(tf, element) {
-            // Update Colors
             const buttons = document.querySelectorAll('#timeframeSelector span');
             buttons.forEach(btn => {
                 btn.classList.remove('text-cyan-400');
@@ -215,13 +222,12 @@
             element.classList.remove('text-gray-400');
             element.classList.add('text-cyan-400');
 
-            // Set Data Rules
-            if (tf === '1D') { currentInterval = '5m'; currentLimit = 288; } // 24 hours (5 min candles -> moves fast!)
-            else if (tf === '1W') { currentInterval = '1h'; currentLimit = 168; } // 1 week (1 hour candles)
-            else if (tf === '1M') { currentInterval = '4h'; currentLimit = 180; } // 1 month (4 hour candles)
-            else if (tf === '1Y') { currentInterval = '1d'; currentLimit = 365; } // 1 year (1 day candles)
+            // 🔥 FIX: 1D ke liye 1-Minute ki candle set ki hai taaki har millisecond movement dikhe! 🔥
+            if (tf === '1D') { currentInterval = '1m'; currentLimit = 500; } 
+            else if (tf === '1W') { currentInterval = '1h'; currentLimit = 168; } 
+            else if (tf === '1M') { currentInterval = '4h'; currentLimit = 180; } 
+            else if (tf === '1Y') { currentInterval = '1d'; currentLimit = 365; } 
 
-            // Reload chart with new timeframe if a coin is already searched
             if (currentActiveCoin !== '') {
                 loadChartData(currentActiveCoin);
             }
@@ -230,11 +236,10 @@
         async function loadChartData(coinSymbol) {
             try {
                 initChart(); 
-                currentActiveCoin = coinSymbol; // Yaad rakho kaunsa coin dekh rahe hain
+                currentActiveCoin = coinSymbol; 
 
                 const symbol = (coinSymbol === 'btc' ? 'BTC' : coinSymbol.toUpperCase()) + 'USDT';
                 
-                // Fetch Data with Selected Timeframe
                 const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${currentInterval}&limit=${currentLimit}`);
                 if (!response.ok) throw new Error("Chart Data Not Found");
                 
@@ -247,21 +252,48 @@
                 const placeholder = document.getElementById('chartPlaceholder');
                 if(placeholder) placeholder.style.display = 'none';
 
-                // Real-Time WebSockets
+                // 🔥 REAL-TIME TICK-BY-TICK LOGIC 🔥
                 if(binanceSocket) binanceSocket.close(); 
                 binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${currentInterval}`);
                 
                 binanceSocket.onmessage = function (event) {
                     const message = JSON.parse(event.data);
                     const kline = message.k;
+                    const livePrice = parseFloat(kline.c);
                     
+                    // 1. UPDATE CHART CANDLE LIVE
                     candlestickSeries.update({
                         time: kline.t / 1000,
                         open: parseFloat(kline.o),
                         high: parseFloat(kline.h),
                         low: parseFloat(kline.l),
-                        close: parseFloat(kline.c)
+                        close: livePrice
                     });
+
+                    // 2. UPDATE RIGHT PANEL PRICE LIVE (Tick by Tick Colors)
+                    const priceText = document.getElementById('currentPrice');
+                    const oldPriceStr = priceText.innerText.replace('$', '').replace(',', '');
+                    const oldPrice = parseFloat(oldPriceStr) || livePrice;
+
+                    priceText.innerText = '$' + livePrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
+
+                    if (livePrice > oldPrice) {
+                        priceText.style.color = '#4ade80'; // Green Flash
+                        priceText.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
+                    } else if (livePrice < oldPrice) {
+                        priceText.style.color = '#f87171'; // Red Flash
+                        priceText.style.textShadow = '0 0 10px rgba(248, 113, 113, 0.5)';
+                    } else {
+                        priceText.style.color = '#ffffff'; // White if no change
+                        priceText.style.textShadow = 'none';
+                    }
+
+                    // 3. BLINK THE 'BINANCE LIVE' BADGE
+                    const liveBadge = document.getElementById('liveBadge');
+                    liveBadge.classList.add('bg-cyan-400', 'text-black');
+                    setTimeout(() => {
+                        liveBadge.classList.remove('bg-cyan-400', 'text-black');
+                    }, 150);
                 }
             } catch (error) { console.error(error); }
         }
@@ -280,6 +312,8 @@
 
                 if(!data.error) {
                     const actualCoin = data.coin || coinInput;
+                    
+                    // Initial set before WS takes over
                     document.getElementById('currentPrice').innerText = '$' + data.last_close_price;
                     document.getElementById('predictedPrice').innerText = '$' + data.predicted_price;
                     
@@ -295,7 +329,7 @@
                     document.getElementById('aiConfidenceText').innerText = conf + '%';
                     document.getElementById('aiConfidenceBar').style.width = conf + '%';
 
-                    // Load chart
+                    // Load chart and start the live data stream
                     loadChartData(actualCoin);
                 }
             } catch (error) {
