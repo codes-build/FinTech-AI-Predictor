@@ -9,6 +9,21 @@ import numpy as np
 app = Flask(__name__)
 CORS(app)
 
+# 🧠 SMART TRANSLATOR: Full names ko symbols mein convert karne ke liye
+COIN_NAME_MAP = {
+    "bitcoin": "btc",
+    "ethereum": "eth",
+    "solana": "sol",
+    "dogecoin": "doge",
+    "cardano": "ada",
+    "ripple": "xrp",
+    "shiba": "shib",
+    "shiba inu": "shib",
+    "polygon": "matic",
+    "polkadot": "dot",
+    "litecoin": "ltc"
+}
+
 @app.route('/')
 def home():
     return jsonify({"message": "Omie's Universal FinTech AI Engine is LIVE!"})
@@ -16,22 +31,27 @@ def home():
 @app.route('/predict/<coin_symbol>', methods=['GET'])
 def predict(coin_symbol):
     try:
-        ticker = f"{coin_symbol.upper()}-USD"
+        # User ne jo bhi likha hai, usko clean karna
+        clean_input = coin_symbol.lower().strip()
+        
+        # Agar full name likha hai, toh dictionary se uska short symbol nikal lo
+        # Agar already short symbol likha hai (jaise 'btc'), toh wahi use karo
+        actual_symbol = COIN_NAME_MAP.get(clean_input, clean_input)
+        
+        ticker = f"{actual_symbol.upper()}-USD"
         
         # 1. Fetching market data
         df = yf.download(ticker, period="100d", interval="1d")
         
         if df.empty:
-            return jsonify({"error": f"Coin symbol '{coin_symbol.upper()}' not found. Try BTC, SOL, DOGE, etc."}), 404
+            return jsonify({"error": f"Coin '{coin_symbol.upper()}' not found in market."}), 404
 
         # FIX 1: yfinance multi-level format ko single level mein convert karna
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
-        # FIX 2: Aaj ka data safe jagah store karna (BEFORE dropping NA)
+        # Features extract karna
         features = ['Open', 'High', 'Low', 'Close', 'Volume']
-        
-        # .iloc[-1:] hamesha ek 2D array return karega, 3D error kabhi nahi aayegi
         latest_features = df[features].iloc[-1:].values 
         last_close = float(df['Close'].iloc[-1])
 
@@ -46,14 +66,14 @@ def predict(coin_symbol):
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
         
-        # 4. Predict Tomorrow's Price accurately
+        # 4. Predict Tomorrow's Price
         predicted_price = model.predict(latest_features)[0]
         
         today = datetime.now()
         tomorrow = today + timedelta(days=1)
         
         return jsonify({
-            "coin": coin_symbol.upper(),
+            "coin": actual_symbol.upper(),
             "current_date": today.strftime("%Y-%m-%d"),
             "target_date": tomorrow.strftime("%Y-%m-%d"),
             "last_close_price": round(last_close, 4),
