@@ -35,7 +35,6 @@ def predict(coin_symbol):
         clean_input = coin_symbol.lower().strip()
         
         # Agar full name likha hai, toh dictionary se uska short symbol nikal lo
-        # Agar already short symbol likha hai (jaise 'btc'), toh wahi use karo
         actual_symbol = COIN_NAME_MAP.get(clean_input, clean_input)
         
         ticker = f"{actual_symbol.upper()}-USD"
@@ -46,7 +45,7 @@ def predict(coin_symbol):
         if df.empty:
             return jsonify({"error": f"Coin '{coin_symbol.upper()}' not found in market."}), 404
 
-        # FIX 1: yfinance multi-level format ko single level mein convert karna
+        # yfinance multi-level format ko single level mein convert karna
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
@@ -67,8 +66,40 @@ def predict(coin_symbol):
         model.fit(X, y)
         
         # 4. Predict Tomorrow's Price
-        predicted_price = model.predict(latest_features)[0]
+        predicted_price = float(model.predict(latest_features)[0])
         
+        # 🔥 REAL AI CONFIDENCE & SIGNAL LOGIC 🔥
+        # Get predictions from all 100 individual trees in the Random Forest
+        all_tree_preds = np.array([tree.predict(latest_features)[0] for tree in model.estimators_])
+        # Standard deviation calculates how much the 100 trees disagree with each other
+        std_dev = float(np.std(all_tree_preds))
+        
+        # Calculate Real Confidence % (Less disagreement = Higher Confidence)
+        max_expected_dev = last_close * 0.05 # Assuming 5% dev is worst-case normal volatility
+        
+        if max_expected_dev > 0:
+            confidence = 100 - ((std_dev / max_expected_dev) * 50)
+        else:
+            confidence = 50.0
+            
+        # Ensure confidence stays in a realistic 60% to 99% range
+        real_confidence = round(max(60.0, min(99.0, confidence)), 1)
+
+        # Calculate Real Trade Signal based on predicted percentage change
+        price_diff = predicted_price - last_close
+        percent_change = (price_diff / last_close) * 100
+
+        if percent_change > 2.0:
+            trade_signal = "STRONG BUY"
+        elif percent_change > 0.2:
+            trade_signal = "BUY"
+        elif percent_change > -0.2:
+            trade_signal = "HOLD"
+        elif percent_change > -2.0:
+            trade_signal = "SELL"
+        else:
+            trade_signal = "STRONG SELL"
+
         today = datetime.now()
         tomorrow = today + timedelta(days=1)
         
@@ -77,7 +108,9 @@ def predict(coin_symbol):
             "current_date": today.strftime("%Y-%m-%d"),
             "target_date": tomorrow.strftime("%Y-%m-%d"),
             "last_close_price": round(last_close, 4),
-            "predicted_price": round(float(predicted_price), 4)
+            "predicted_price": round(predicted_price, 4),
+            "confidence_score": real_confidence,
+            "trade_signal": trade_signal
         })
 
     except Exception as e:
