@@ -33,7 +33,7 @@
         .ticker-wrap {
             width: 100%;
             overflow: hidden;
-            background-color: rgba(3, 7, 18, 0.9);
+            background-color: rgba(3, 7, 18, 0.95);
             border-bottom: 1px solid rgba(255,255,255,0.1);
             position: fixed;
             top: 0;
@@ -55,11 +55,15 @@
 
     <!-- LIVE MARKET TICKER -->
     <div class="ticker-wrap h-10 flex items-center justify-between px-4">
-        <div class="ticker text-xs font-mono font-bold tracking-widest text-gray-300 overflow-hidden" id="liveTicker" style="width: 70%;">
-            Loading Live Market Data from Binance...
+        <!-- Restricted width so ticker doesn't overlap login -->
+        <div class="overflow-hidden" style="width: 72%;">
+            <div class="ticker text-xs font-mono font-bold tracking-widest text-gray-300" id="liveTicker">
+                Loading Live Market Data from Binance...
+            </div>
         </div>
-        <!-- AUTH STATUS BAR -->
-        <div id="authStatusBar" class="text-xs font-mono z-50 flex items-center gap-3">
+        
+        <!-- AUTH STATUS BAR WITH SOLID BG TO PREVENT OVERLAP -->
+        <div id="authStatusBar" class="text-xs font-mono z-50 flex items-center gap-3 bg-[#030712] pl-3 py-1">
             <span id="userEmailDisplay" class="text-cyan-400 hidden"></span>
             <button onclick="openAuthModal('login')" id="loginNavBtn" class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 px-3 py-1 rounded border border-cyan-500/30 transition">Login</button>
             <button onclick="logoutUser()" id="logoutNavBtn" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition hidden">Logout</button>
@@ -207,7 +211,7 @@
     </div>
 
     <script>
-        // --- 1. SUPABASE CONFIGURATION (INJECTED) ---
+        // --- 1. SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://ouqoqzhferdifuyxsfit.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable__90krxVSVW4t4Ro80qs5eQ_HxAz-RU4'; 
 
@@ -291,7 +295,6 @@
             if (data) {
                 document.getElementById('walletBalance').innerText = '$' + parseFloat(data.balance).toLocaleString('en-US', {minimumFractionDigits: 2});
             } else {
-                // If wallet row doesn't exist yet, insert one with $10,000
                 await supabaseClient.from('wallets').insert([{ user_id: currentUser.id, balance: 10000 }]);
                 document.getElementById('walletBalance').innerText = '$10,000.00';
             }
@@ -307,7 +310,6 @@
             alert(`Demo Paper Trade: ${type} order executed successfully for ${coin}!`);
         }
 
-        // Initialize session check on load
         checkUserSession();
 
         // --- FORMATTER & TICKER ---
