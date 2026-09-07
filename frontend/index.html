@@ -48,12 +48,19 @@
             100% { transform: translateX(-100%); }
         }
         
-        /* Smooth color transition for live prices */
+        /* 🔥 EXTREME LIVE FLASHING CSS 🔥 */
         #currentPrice {
-            transition: color 0.2s ease-out, text-shadow 0.2s ease-out;
+            transition: all 0.15s ease-out;
         }
-        #liveBadge {
-            transition: background-color 0.1s ease-out, color 0.1s ease-out;
+        .price-flash-green {
+            color: #4ade80 !important;
+            text-shadow: 0 0 20px rgba(74, 222, 128, 1);
+            transform: scale(1.02);
+        }
+        .price-flash-red {
+            color: #f87171 !important;
+            text-shadow: 0 0 20px rgba(248, 113, 113, 1);
+            transform: scale(1.02);
         }
     </style>
 </head>
@@ -79,7 +86,7 @@
             <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
                 <div class="flex items-center gap-3">
                     <span class="text-cyan-400 font-bold tracking-widest uppercase" id="chartTitle">MARKET CHART</span>
-                    <span id="liveBadge" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30">BINANCE LIVE</span>
+                    <span id="liveBadge" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30 transition-all duration-150">BINANCE LIVE</span>
                 </div>
                 
                 <!-- TIMEFRAME FILTERS -->
@@ -123,7 +130,7 @@
                         <p class="text-cyan-400">AI TARGET</p>
                     </div>
                     <div class="flex justify-between items-center">
-                        <p class="text-xl text-white font-mono font-bold" id="currentPrice">--</p>
+                        <p class="text-2xl text-white font-mono font-bold" id="currentPrice">--</p>
                         <p class="text-2xl font-bold text-green-400 font-mono" id="predictedPrice">--</p>
                     </div>
                 </div>
@@ -189,10 +196,10 @@
         let candlestickSeries = null;
         let binanceSocket = null;
         
-        // Default settings (1 Month view)
         let currentInterval = '4h'; 
         let currentLimit = 180;
         let currentActiveCoin = ''; 
+        let lastLivePrice = 0; // 🔥 NEW: Isse hum DOM text parse karne ke error se bach jayenge!
 
         function initChart() {
             if (chart !== null) return; 
@@ -204,6 +211,10 @@
                 layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#9ca3af' },
                 grid: { vertLines: { color: 'rgba(255, 255, 255, 0.05)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
                 crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                timeScale: { 
+                    timeVisible: true, // 🔥 FIX: "7 7 7 7" error gone. Ab Graph ko pata chalega ki ye Minutes & Hours hain!
+                    secondsVisible: false,
+                }
             });
 
             candlestickSeries = chart.addCandlestickSeries({
@@ -222,14 +233,13 @@
             element.classList.remove('text-gray-400');
             element.classList.add('text-cyan-400');
 
-            // 🔥 FIX: 1D ke liye 1-Minute ki candle set ki hai taaki har millisecond movement dikhe! 🔥
             if (tf === '1D') { currentInterval = '1m'; currentLimit = 500; } 
             else if (tf === '1W') { currentInterval = '1h'; currentLimit = 168; } 
             else if (tf === '1M') { currentInterval = '4h'; currentLimit = 180; } 
             else if (tf === '1Y') { currentInterval = '1d'; currentLimit = 365; } 
 
             if (currentActiveCoin !== '') {
-                loadChartData(currentActiveCoin);
+                loadChartData(currentActiveCoin); // Reload graph seamlessly
             }
         }
 
@@ -252,7 +262,7 @@
                 const placeholder = document.getElementById('chartPlaceholder');
                 if(placeholder) placeholder.style.display = 'none';
 
-                // 🔥 REAL-TIME TICK-BY-TICK LOGIC 🔥
+                // 🔥 START LIVE WEBSOCKET 🔥
                 if(binanceSocket) binanceSocket.close(); 
                 binanceSocket = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${currentInterval}`);
                 
@@ -270,30 +280,33 @@
                         close: livePrice
                     });
 
-                    // 2. UPDATE RIGHT PANEL PRICE LIVE (Tick by Tick Colors)
+                    // 2. UPDATE TEXT AND FLASH COLORS INSTANTLY
                     const priceText = document.getElementById('currentPrice');
-                    const oldPriceStr = priceText.innerText.replace('$', '').replace(',', '');
-                    const oldPrice = parseFloat(oldPriceStr) || livePrice;
-
                     priceText.innerText = '$' + livePrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 4});
 
-                    if (livePrice > oldPrice) {
-                        priceText.style.color = '#4ade80'; // Green Flash
-                        priceText.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
-                    } else if (livePrice < oldPrice) {
-                        priceText.style.color = '#f87171'; // Red Flash
-                        priceText.style.textShadow = '0 0 10px rgba(248, 113, 113, 0.5)';
-                    } else {
-                        priceText.style.color = '#ffffff'; // White if no change
-                        priceText.style.textShadow = 'none';
-                    }
+                    if (lastLivePrice !== 0 && livePrice !== lastLivePrice) {
+                        // Remove old classes pehle taaki animation restart ho
+                        priceText.classList.remove('price-flash-green', 'price-flash-red');
+                        
+                        // Force reflow (DOM hack for instant animation trigger)
+                        void priceText.offsetWidth; 
 
-                    // 3. BLINK THE 'BINANCE LIVE' BADGE
-                    const liveBadge = document.getElementById('liveBadge');
-                    liveBadge.classList.add('bg-cyan-400', 'text-black');
-                    setTimeout(() => {
-                        liveBadge.classList.remove('bg-cyan-400', 'text-black');
-                    }, 150);
+                        if (livePrice > lastLivePrice) {
+                            priceText.classList.add('price-flash-green');
+                            setTimeout(() => priceText.classList.remove('price-flash-green'), 300);
+                        } else if (livePrice < lastLivePrice) {
+                            priceText.classList.add('price-flash-red');
+                            setTimeout(() => priceText.classList.remove('price-flash-red'), 300);
+                        }
+
+                        // BLINK 'BINANCE LIVE' BADGE
+                        const liveBadge = document.getElementById('liveBadge');
+                        liveBadge.classList.add('bg-cyan-400', 'text-black');
+                        setTimeout(() => liveBadge.classList.remove('bg-cyan-400', 'text-black'), 150);
+                    }
+                    
+                    // Update variable for next millisecond check
+                    lastLivePrice = livePrice;
                 }
             } catch (error) { console.error(error); }
         }
@@ -313,7 +326,9 @@
                 if(!data.error) {
                     const actualCoin = data.coin || coinInput;
                     
-                    // Initial set before WS takes over
+                    // Initialize memory tracker so socket has a baseline
+                    lastLivePrice = parseFloat(data.last_close_price);
+
                     document.getElementById('currentPrice').innerText = '$' + data.last_close_price;
                     document.getElementById('predictedPrice').innerText = '$' + data.predicted_price;
                     
@@ -329,7 +344,7 @@
                     document.getElementById('aiConfidenceText').innerText = conf + '%';
                     document.getElementById('aiConfidenceBar').style.width = conf + '%';
 
-                    // Load chart and start the live data stream
+                    // Load chart and live data
                     loadChartData(actualCoin);
                 }
             } catch (error) {
