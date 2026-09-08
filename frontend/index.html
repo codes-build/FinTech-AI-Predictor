@@ -74,16 +74,31 @@
     <div class="fixed inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.2)_0%,_rgba(3,7,18,0.9)_100%)] z-0"></div>
     <div class="glow-orb"></div> 
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN DASHBOARD CONTAINER -->
     <div class="relative z-10 p-4 lg:p-6 flex flex-col gap-6 max-w-[1600px] mx-auto">
         
+        <!-- TOP ROW: AI SENTIMENT MATRIX (Feature 2) -->
+        <div class="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-widest text-cyan-400">⚡ Quantum AI Multi-Coin Sentiment Matrix</span>
+                <span class="text-[10px] text-gray-400 font-mono">Auto-Scanning Top Assets</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="sentimentMatrixGrid">
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 animate-pulse text-center text-xs text-gray-500 font-mono">Scanning BTC...</div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 animate-pulse text-center text-xs text-gray-500 font-mono">Scanning ETH...</div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 animate-pulse text-center text-xs text-gray-500 font-mono">Scanning SOL...</div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 animate-pulse text-center text-xs text-gray-500 font-mono">Scanning DOGE...</div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 animate-pulse text-center text-xs text-gray-500 font-mono">Scanning BNB...</div>
+            </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-6">
-            <!-- LEFT PANEL: TradingView Chart Area -->
+            <!-- LEFT PANEL: TradingView Chart Area with SMA/EMA (Feature 3) -->
             <div class="flex-grow bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 flex flex-col shadow-2xl overflow-hidden min-h-[500px]">
                 <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
                     <div class="flex items-center gap-3">
                         <span class="text-cyan-400 font-bold tracking-widest uppercase" id="chartTitle">BTC / USDT</span>
-                        <span id="liveBadge" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30 transition-all duration-150">BINANCE LIVE</span>
+                        <span id="liveBadge" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded border border-cyan-500/30 transition-all duration-150">EMA 20 OVERLAY</span>
                     </div>
                     
                     <!-- TIMEFRAME FILTERS -->
@@ -98,7 +113,7 @@
                 <div id="tvchart" class="flex-grow relative w-full h-[450px]">
                     <div id="chartPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10 bg-[#030712]/80 backdrop-blur-sm">
                         <div class="w-12 h-12 border-4 border-gray-700 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
-                        <p class="tracking-widest text-sm uppercase" id="chartLoadingText">Loading Live Chart...</p>
+                        <p class="tracking-widest text-sm uppercase" id="chartLoadingText">Loading Chart & Indicators...</p>
                     </div>
                 </div>
             </div>
@@ -180,7 +195,7 @@
                 
                 <!-- Paper Trading Terminal Buttons -->
                 <div class="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl">
-                    <h2 class="text-xs text-gray-400 tracking-widest uppercase mb-4 text-center">Paper Trading Terminal</h2>
+                    <h2 class="text-xs text-gray-400 tracking-widest uppercase mb-4 text-center">Demo Trading Terminal</h2>
                     <div class="flex gap-4">
                         <button onclick="openTradeModal('BUY')" class="flex-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/50 py-3 rounded-xl font-bold tracking-widest uppercase text-sm transition-all shadow-[0_0_15px_rgba(74,222,128,0.2)]">
                             BUY
@@ -194,23 +209,27 @@
             </div>
         </div>
 
-        <!-- BOTTOM PANEL: TRADE HISTORY / PORTFOLIO LOG -->
+        <!-- BOTTOM PANEL: ACTIVE POSITIONS & LIVE P&L MANAGER (Feature 1) -->
         <div class="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-2xl">
-            <h3 class="text-xs text-cyan-400 font-bold tracking-widest uppercase mb-4">Active & Executed Demo Trades</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xs text-cyan-400 font-bold tracking-widest uppercase">Active Positions & Live P&L Manager</h3>
+                <span class="text-[10px] text-gray-400 font-mono">Real-Time Market Tracking</span>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs font-mono">
                     <thead>
                         <tr class="border-b border-white/10 text-gray-400 uppercase">
                             <th class="pb-3">Asset</th>
                             <th class="pb-3">Type</th>
-                            <th class="pb-3">Margin Amount</th>
+                            <th class="pb-3">Margin</th>
                             <th class="pb-3">Entry Price</th>
-                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Live P&L ($)</th>
+                            <th class="pb-3 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="tradeHistoryBody">
+                    <tbody id="activeTradesBody">
                         <tr>
-                            <td colspan="5" class="py-4 text-center text-gray-500">No trades executed yet. Login and place a demo trade!</td>
+                            <td colspan="6" class="py-4 text-center text-gray-500">No active positions. Login and place a demo trade!</td>
                         </tr>
                     </tbody>
                 </table>
@@ -242,7 +261,7 @@
                 </div>
 
                 <button onclick="confirmExecuteTrade()" id="confirmTradeBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2">
-                    Execute Order
+                    Open Position
                 </button>
             </div>
         </div>
@@ -280,6 +299,7 @@
         let isSignUpMode = false;
         let currentWalletBalance = 0;
         let pendingTradeType = '';
+        let activeTrades = []; // Stores running demo positions for live P&L
 
         // --- AUTH & WALLET LOGIC ---
         async function checkUserSession() {
@@ -292,7 +312,6 @@
                 document.getElementById('logoutNavBtn').classList.remove('hidden');
                 document.getElementById('walletStatusBadge').innerText = 'DEMO ACTIVE';
                 fetchUserWallet();
-                fetchTradeHistory();
             }
         }
 
@@ -366,7 +385,7 @@
             }
         }
 
-        // --- ADVANCED TRADE MODAL LOGIC ---
+        // --- FEATURE 1: LIVE P&L TRADE EXECUTION & MANAGEMENT ---
         function openTradeModal(type) {
             if (!currentUser) {
                 alert('Please Login to access Demo Paper Trading!');
@@ -399,48 +418,123 @@
             }
 
             const coin = document.getElementById('coinSelector').value.toUpperCase() || 'BTC';
-            const entryPrice = document.getElementById('currentPrice').innerText;
-            
-            // Simulate win/loss margin shift
-            const newBalance = currentWalletBalance - tradeAmount + (Math.random() > 0.4 ? (tradeAmount * 1.1) : (tradeAmount * 0.95));
+            const rawPriceText = document.getElementById('currentPrice').innerText.replace('$', '').replace(/,/g, '');
+            const entryPrice = parseFloat(rawPriceText);
 
+            // Deduct margin from wallet immediately
+            const newBalance = currentWalletBalance - tradeAmount;
             const { error } = await supabaseClient
                 .from('wallets')
                 .update({ balance: newBalance })
                 .eq('user_id', currentUser.id);
 
             if (!error) {
-                // Save trade log locally or mock in table
-                appendTradeToHistory(coin, pendingTradeType, tradeAmount, entryPrice);
                 currentWalletBalance = newBalance;
                 document.getElementById('walletBalance').innerText = '$' + currentWalletBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+                
+                // Push to active trades array for live P&L tracking
+                activeTrades.push({
+                    id: Date.now(),
+                    coin: coin,
+                    type: pendingTradeType,
+                    margin: tradeAmount,
+                    entryPrice: entryPrice
+                });
+
+                renderActiveTrades();
                 closeTradeModal();
-                alert(`Order Successful! ${pendingTradeType} ${coin} with $${tradeAmount} margin.`);
+                alert(`Position Opened! ${pendingTradeType} ${coin} with $${tradeAmount} margin.`);
             } else {
                 alert('Trade execution failed.');
             }
         }
 
-        function appendTradeToHistory(coin, type, amount, price) {
-            const tbody = document.getElementById('tradeHistoryBody');
-            if (tbody.innerHTML.includes('No trades executed yet')) {
-                tbody.innerHTML = '';
+        function renderActiveTrades() {
+            const tbody = document.getElementById('activeTradesBody');
+            if (activeTrades.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-500">No active positions. Place a demo trade!</td></tr>`;
+                return;
             }
-            const badgeColor = type === 'BUY' ? 'text-green-400 bg-green-500/10 border-green-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30';
-            const row = `
-                <tr class="border-b border-white/5 hover:bg-white/5 transition">
-                    <td class="py-3 font-bold text-white">${coin}/USDT</td>
-                    <td class="py-3"><span class="px-2 py-1 rounded border text-[10px] font-bold ${badgeColor}">${type}</span></td>
-                    <td class="py-3">$${amount.toFixed(2)}</td>
-                    <td class="py-3">${price}</td>
-                    <td class="py-3 text-cyan-400">CLOSED / P&L UPDATED</td>
-                </tr>
-            `;
-            tbody.innerHTML = row + tbody.innerHTML;
+
+            let html = '';
+            activeTrades.forEach((trade, index) => {
+                const badgeColor = trade.type === 'BUY' ? 'text-green-400 bg-green-500/10 border-green-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30';
+                
+                html += `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                        <td class="py-3 font-bold text-white">${trade.coin}/USDT</td>
+                        <td class="py-3"><span class="px-2 py-1 rounded border text-[10px] font-bold ${badgeColor}">${trade.type}</span></td>
+                        <td class="py-3">$${trade.margin.toFixed(2)}</td>
+                        <td class="py-3">$${trade.entryPrice.toLocaleString()}</td>
+                        <td class="py-3 font-bold" id="pnl-${trade.id}">Calculating...</td>
+                        <td class="py-3 text-right">
+                            <button onclick="closeActiveTrade(${index})" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition text-[10px] uppercase font-bold">Close Position</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
 
-        async function fetchTradeHistory() {
-            // Placeholder for loading historical trades if saved in DB
+        async function closeActiveTrade(index) {
+            const trade = activeTrades[index];
+            const rawPriceText = document.getElementById('currentPrice').innerText.replace('$', '').replace(/,/g, '');
+            const currentLivePrice = parseFloat(rawPriceText);
+
+            let pnl = 0;
+            if (trade.type === 'BUY') {
+                pnl = trade.margin * ((currentLivePrice - trade.entryPrice) / trade.entryPrice);
+            } else {
+                pnl = trade.margin * ((trade.entryPrice - currentLivePrice) / trade.entryPrice);
+            }
+
+            const finalReturn = trade.margin + pnl;
+            currentWalletBalance += finalReturn;
+
+            // Update Supabase wallet balance
+            await supabaseClient
+                .from('wallets')
+                .update({ balance: currentWalletBalance })
+                .eq('user_id', currentUser.id);
+
+            document.getElementById('walletBalance').innerText = '$' + currentWalletBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+            
+            alert(`Position Closed for ${trade.coin}!\nRealized P&L: $${pnl.toFixed(2)}`);
+            activeTrades.splice(index, 1);
+            renderActiveTrades();
+        }
+
+        // --- FEATURE 2: MULTI-COIN AI SENTIMENT MATRIX SCANNER ---
+        async function fetchSentimentMatrix() {
+            const coins = ['btc', 'eth', 'sol', 'doge', 'bnb'];
+            const gridContainer = document.getElementById('sentimentMatrixGrid');
+            let html = '';
+
+            for (const coin of coins) {
+                try {
+                    const res = await fetch(`https://omie-fintech-api.onrender.com/predict/${coin}`);
+                    const data = await res.json();
+                    const signal = data.trade_signal || "NEUTRAL";
+                    const conf = data.confidence_score || 50;
+                    const color = signal.includes('BUY') ? 'text-green-400 bg-green-500/10 border-green-500/20' : (signal.includes('SELL') ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20');
+                    
+                    html += `
+                        <div class="bg-black/60 border border-white/10 p-3 rounded-xl flex flex-col gap-1 items-center">
+                            <span class="text-xs font-bold text-white uppercase">${coin}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${color}">${signal}</span>
+                            <span class="text-[9px] text-gray-400 font-mono">${conf}% Conf</span>
+                        </div>
+                    `;
+                } catch (e) {
+                    html += `
+                        <div class="bg-black/60 border border-white/10 p-3 rounded-xl flex flex-col gap-1 items-center">
+                            <span class="text-xs font-bold text-white uppercase">${coin}</span>
+                            <span class="text-[10px] text-gray-400 font-mono">Offline</span>
+                        </div>
+                    `;
+                }
+            }
+            gridContainer.innerHTML = html;
         }
 
         // --- FORMATTER & TICKER ---
@@ -467,9 +561,10 @@
         fetchLiveTicker();
         setInterval(fetchLiveTicker, 10000);
 
-        // --- CHART & WEBSOCKET LOGIC ---
+        // --- FEATURE 3: CHART, WEBSOCKET & EMA TECHNICAL INDICATOR ---
         let chart = null;
         let candlestickSeries = null;
+        let emaSeries = null;
         let binanceSocket = null;
         
         let currentInterval = '4h'; 
@@ -494,7 +589,30 @@
                 upColor: '#4ade80', downColor: '#f87171', borderVisible: false, wickUpColor: '#4ade80', wickDownColor: '#f87171'
             });
 
+            // EMA Indicator Line Overlay (Feature 3)
+            emaSeries = chart.addLineSeries({
+                color: '#38bdf8',
+                lineWidth: 2,
+            });
+
             window.addEventListener('resize', () => { if(chart) chart.resize(chartContainer.clientWidth, 450); });
+        }
+
+        // Calculate Exponential Moving Average (EMA)
+        function calculateEMA(data, period) {
+            const k = 2 / (period + 1);
+            let emaArray = [];
+            let prevEMA = data[0].close;
+
+            for (let i = 0; i < data.length; i++) {
+                if (i === 0) {
+                    prevEMA = data[i].close;
+                } else {
+                    prevEMA = (data[i].close * k) + (prevEMA * (1 - k));
+                }
+                emaArray.push({ time: data[i].time, value: prevEMA });
+            }
+            return emaArray;
         }
 
         function changeTimeframe(tf, element) {
@@ -532,6 +650,11 @@
                 }));
                 
                 candlestickSeries.setData(chartData);
+
+                // Set EMA Overlay data
+                const emaData = calculateEMA(chartData, 20);
+                emaSeries.setData(emaData);
+
                 const placeholder = document.getElementById('chartPlaceholder');
                 if(placeholder) placeholder.style.display = 'none';
 
@@ -572,6 +695,21 @@
 
                     const priceText = document.getElementById('currentPrice');
                     priceText.innerText = formatCurrency(livePrice);
+
+                    // Update live P&L for active trades in real-time
+                    activeTrades.forEach(trade => {
+                        const pnlEl = document.getElementById(`pnl-${trade.id}`);
+                        if (pnlEl) {
+                            let pnl = 0;
+                            if (trade.type === 'BUY') {
+                                pnl = trade.margin * ((livePrice - trade.entryPrice) / trade.entryPrice);
+                            } else {
+                                pnl = trade.margin * ((trade.entryPrice - livePrice) / trade.entryPrice);
+                            }
+                            pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+                            pnlEl.className = pnl >= 0 ? 'py-3 font-bold text-green-400' : 'py-3 font-bold text-red-400';
+                        }
+                    });
 
                     if (lastLivePrice !== 0 && livePrice !== lastLivePrice) {
                         if (livePrice > lastLivePrice) {
@@ -634,9 +772,11 @@
             }
         }
 
-        // Auto load default BTC on start
+        // Initialize on Load
         getPrediction();
         checkUserSession();
+        fetchSentimentMatrix();
+        setInterval(fetchSentimentMatrix, 30000); // Refresh matrix every 30s
     </script>
 </body>
 </html>
