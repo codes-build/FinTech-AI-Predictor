@@ -61,8 +61,9 @@
             </div>
         </div>
         
-        <!-- AUTH STATUS BAR -->
+        <!-- AUTH STATUS BAR & LEADERBOARD BUTTON -->
         <div id="authStatusBar" class="text-xs font-mono z-50 flex items-center gap-3 bg-[#030712] pl-3 py-1">
+            <button onclick="openLeaderboardModal()" class="bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 px-3 py-1 rounded border border-yellow-500/30 transition font-bold">🏆 Leaderboard</button>
             <span id="userEmailDisplay" class="text-cyan-400 hidden"></span>
             <button onclick="openAuthModal('login')" id="loginNavBtn" class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 px-3 py-1 rounded border border-cyan-500/30 transition">Login</button>
             <button onclick="logoutUser()" id="logoutNavBtn" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition hidden">Logout</button>
@@ -77,7 +78,7 @@
     <!-- MAIN DASHBOARD CONTAINER -->
     <div class="relative z-10 p-4 lg:p-6 flex flex-col gap-6 max-w-[1600px] mx-auto">
         
-        <!-- TOP ROW: AI SENTIMENT MATRIX (Feature 2) -->
+        <!-- TOP ROW: AI SENTIMENT MATRIX -->
         <div class="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-4 shadow-xl">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-bold uppercase tracking-widest text-cyan-400">⚡ Quantum AI Multi-Coin Sentiment Matrix</span>
@@ -93,7 +94,7 @@
         </div>
 
         <div class="flex flex-col lg:flex-row gap-6">
-            <!-- LEFT PANEL: TradingView Chart Area with SMA/EMA (Feature 3) -->
+            <!-- LEFT PANEL: TradingView Chart Area with EMA -->
             <div class="flex-grow bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 flex flex-col shadow-2xl overflow-hidden min-h-[500px]">
                 <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
                     <div class="flex items-center gap-3">
@@ -209,7 +210,7 @@
             </div>
         </div>
 
-        <!-- BOTTOM PANEL: ACTIVE POSITIONS & LIVE P&L MANAGER (Feature 1) -->
+        <!-- BOTTOM PANEL: ACTIVE POSITIONS & LIVE P&L MANAGER -->
         <div class="bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xs text-cyan-400 font-bold tracking-widest uppercase">Active Positions & Live P&L Manager</h3>
@@ -236,6 +237,32 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="leaderboardModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-[#0b0f19] border border-yellow-500/30 p-8 rounded-3xl w-full max-w-lg relative shadow-2xl">
+            <button onclick="closeLeaderboardModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold text-lg">&times;</button>
+            <h2 class="text-lg font-bold text-yellow-400 tracking-widest uppercase mb-2 text-center">🏆 Quantum Demo Leaderboard</h2>
+            <p class="text-[10px] text-gray-400 text-center uppercase tracking-widest mb-6">Top Traders Ranked by Virtual Balance</p>
+            
+            <div class="overflow-y-auto max-h-[350px]">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead>
+                        <tr class="border-b border-white/10 text-gray-400 uppercase">
+                            <th class="pb-2">Rank</th>
+                            <th class="pb-2">Trader ID / Wallet</th>
+                            <th class="pb-2 text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardTableBody">
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-gray-500">Loading Leaderboard Rankings...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <!-- ADVANCED TRADE EXECUTION MODAL -->
@@ -299,7 +326,7 @@
         let isSignUpMode = false;
         let currentWalletBalance = 0;
         let pendingTradeType = '';
-        let activeTrades = []; // Stores running demo positions for live P&L
+        let activeTrades = [];
 
         // --- AUTH & WALLET LOGIC ---
         async function checkUserSession() {
@@ -381,11 +408,58 @@
             } else {
                 await supabaseClient.from('wallets').insert([{ user_id: currentUser.id, balance: 10000 }]);
                 currentWalletBalance = 10000;
-                document.getElementById('walletBalance').innerText = '$10,000.00';
+                document.getElementById('walletBalance').innerText = '$' + $10,000.00;
             }
         }
 
-        // --- FEATURE 1: LIVE P&L TRADE EXECUTION & MANAGEMENT ---
+        // --- LEADERBOARD LOGIC ---
+        async function openLeaderboardModal() {
+            document.getElementById('leaderboardModal').classList.remove('hidden');
+            const tbody = document.getElementById('leaderboardTableBody');
+            tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-gray-500">Fetching rankings from database...</td></tr>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('wallets')
+                    .select('user_id, balance')
+                    .order('balance', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-gray-500">No rankings found yet.</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                data.forEach((row, idx) => {
+                    const rank = idx + 1;
+                    const medal = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `#${rank}`));
+                    const maskedId = row.user_id.substring(0, 8) + '...';
+                    const isCurrent = currentUser && row.user_id === currentUser.id;
+                    const rowHighlight = isCurrent ? 'bg-cyan-500/10 text-cyan-300 font-bold' : 'hover:bg-white/5';
+
+                    html += `
+                        <tr class="border-b border-white/5 ${rowHighlight} transition">
+                            <td class="py-3 pl-2">${medal}</td>
+                            <td class="py-3 font-mono">${maskedId} ${isCurrent ? '(You)' : ''}</td>
+                            <td class="py-3 text-right font-mono text-green-400">$${parseFloat(row.balance).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-red-400">Failed to load leaderboard.</td></tr>`;
+            }
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboardModal').classList.add('hidden');
+        }
+
+        // --- TRADE EXECUTION & MANAGEMENT ---
         function openTradeModal(type) {
             if (!currentUser) {
                 alert('Please Login to access Demo Paper Trading!');
@@ -421,7 +495,6 @@
             const rawPriceText = document.getElementById('currentPrice').innerText.replace('$', '').replace(/,/g, '');
             const entryPrice = parseFloat(rawPriceText);
 
-            // Deduct margin from wallet immediately
             const newBalance = currentWalletBalance - tradeAmount;
             const { error } = await supabaseClient
                 .from('wallets')
@@ -432,7 +505,6 @@
                 currentWalletBalance = newBalance;
                 document.getElementById('walletBalance').innerText = '$' + currentWalletBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
                 
-                // Push to active trades array for live P&L tracking
                 activeTrades.push({
                     id: Date.now(),
                     coin: coin,
@@ -491,7 +563,6 @@
             const finalReturn = trade.margin + pnl;
             currentWalletBalance += finalReturn;
 
-            // Update Supabase wallet balance
             await supabaseClient
                 .from('wallets')
                 .update({ balance: currentWalletBalance })
@@ -504,7 +575,7 @@
             renderActiveTrades();
         }
 
-        // --- FEATURE 2: MULTI-COIN AI SENTIMENT MATRIX SCANNER ---
+        // --- SENTIMENT MATRIX SCANNER ---
         async function fetchSentimentMatrix() {
             const coins = ['btc', 'eth', 'sol', 'doge', 'bnb'];
             const gridContainer = document.getElementById('sentimentMatrixGrid');
@@ -537,7 +608,7 @@
             gridContainer.innerHTML = html;
         }
 
-        // --- FORMATTER & TICKER ---
+        // --- TICKER ---
         const formatCurrency = (num) => {
             return '$' + parseFloat(num).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         };
@@ -561,7 +632,7 @@
         fetchLiveTicker();
         setInterval(fetchLiveTicker, 10000);
 
-        // --- FEATURE 3: CHART, WEBSOCKET & EMA TECHNICAL INDICATOR ---
+        // --- CHART, WEBSOCKET & EMA ---
         let chart = null;
         let candlestickSeries = null;
         let emaSeries = null;
@@ -589,7 +660,6 @@
                 upColor: '#4ade80', downColor: '#f87171', borderVisible: false, wickUpColor: '#4ade80', wickDownColor: '#f87171'
             });
 
-            // EMA Indicator Line Overlay (Feature 3)
             emaSeries = chart.addLineSeries({
                 color: '#38bdf8',
                 lineWidth: 2,
@@ -598,7 +668,6 @@
             window.addEventListener('resize', () => { if(chart) chart.resize(chartContainer.clientWidth, 450); });
         }
 
-        // Calculate Exponential Moving Average (EMA)
         function calculateEMA(data, period) {
             const k = 2 / (period + 1);
             let emaArray = [];
@@ -651,7 +720,6 @@
                 
                 candlestickSeries.setData(chartData);
 
-                // Set EMA Overlay data
                 const emaData = calculateEMA(chartData, 20);
                 emaSeries.setData(emaData);
 
@@ -696,7 +764,6 @@
                     const priceText = document.getElementById('currentPrice');
                     priceText.innerText = formatCurrency(livePrice);
 
-                    // Update live P&L for active trades in real-time
                     activeTrades.forEach(trade => {
                         const pnlEl = document.getElementById(`pnl-${trade.id}`);
                         if (pnlEl) {
@@ -772,11 +839,10 @@
             }
         }
 
-        // Initialize on Load
         getPrediction();
         checkUserSession();
         fetchSentimentMatrix();
-        setInterval(fetchSentimentMatrix, 30000); // Refresh matrix every 30s
+        setInterval(fetchSentimentMatrix, 30000);
     </script>
 </body>
 </html>
