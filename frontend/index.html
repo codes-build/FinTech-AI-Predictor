@@ -53,7 +53,7 @@
 </head>
 <body class="font-sans overflow-x-hidden min-h-screen relative pt-14 pb-12">
 
-    <!-- LIVE MARKET TICKER (Fixed width to prevent button overlap) -->
+    <!-- LIVE MARKET TICKER -->
     <div class="ticker-wrap h-10 flex items-center justify-between px-4">
         <div class="overflow-hidden" style="width: 65%;">
             <div class="ticker text-xs font-mono font-bold tracking-widest text-gray-300" id="liveTicker">
@@ -63,10 +63,10 @@
         
         <!-- AUTH STATUS BAR & LEADERBOARD BUTTON -->
         <div id="authStatusBar" class="text-xs font-mono z-50 flex items-center gap-2 bg-[#030712] pl-3 py-1">
-            <button onclick="openLeaderboardModal()" class="bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 px-2.5 py-1 rounded border border-yellow-500/30 transition font-bold">🏆 Leaderboard</button>
+            <button onclick="openLeaderboardModal()" class="bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-300 px-2.5 py-1 rounded border border-yellow-500/30 transition font-bold cursor-pointer">🏆 Leaderboard</button>
             <span id="userEmailDisplay" class="text-cyan-400 hidden"></span>
-            <button onclick="openAuthModal('login')" id="loginNavBtn" class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 px-3 py-1 rounded border border-cyan-500/30 transition">Login</button>
-            <button onclick="logoutUser()" id="logoutNavBtn" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition hidden">Logout</button>
+            <button onclick="openAuthModal('login')" id="loginNavBtn" class="bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 px-3 py-1 rounded border border-cyan-500/30 transition cursor-pointer">Login</button>
+            <button onclick="logoutUser()" id="logoutNavBtn" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition hidden cursor-pointer">Logout</button>
         </div>
     </div>
 
@@ -148,7 +148,7 @@
                     <div class="flex gap-2 mb-4">
                         <input type="text" id="coinSelector" value="BTC" placeholder="BTC, ETH, SOL..." 
                             class="flex-grow bg-black/60 text-cyan-300 font-bold p-3 rounded-xl focus:outline-none border border-white/20 focus:border-cyan-400 text-center uppercase tracking-widest">
-                        <button onclick="getPrediction()" class="bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-200 px-4 rounded-xl border border-cyan-400/50 text-xs font-bold uppercase transition">
+                        <button onclick="getPrediction()" class="bg-cyan-500/30 hover:bg-cyan-500/50 text-cyan-200 px-4 rounded-xl border border-cyan-400/50 text-xs font-bold uppercase transition cursor-pointer">
                             Load
                         </button>
                     </div>
@@ -189,7 +189,7 @@
                     </div>
 
                     <button onclick="getPrediction()" 
-                        class="w-full bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-100 font-bold py-4 rounded-xl border border-cyan-400/50 tracking-widest uppercase text-xs transition-all">
+                        class="w-full bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-100 font-bold py-4 rounded-xl border border-cyan-400/50 tracking-widest uppercase text-xs transition-all cursor-pointer">
                         Run AI Prediction
                     </button>
                 </div>
@@ -198,10 +198,10 @@
                 <div class="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 shadow-2xl">
                     <h2 class="text-xs text-gray-400 tracking-widest uppercase mb-4 text-center">Demo Trading Terminal</h2>
                     <div class="flex gap-4">
-                        <button onclick="openTradeModal('BUY')" class="flex-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/50 py-3 rounded-xl font-bold tracking-widest uppercase text-sm transition-all shadow-[0_0_15px_rgba(74,222,128,0.2)]">
+                        <button onclick="openTradeModal('BUY')" class="flex-1 bg-green-500/20 hover:bg-green-500/40 text-green-400 border border-green-500/50 py-3 rounded-xl font-bold tracking-widest uppercase text-sm transition-all shadow-[0_0_15px_rgba(74,222,128,0.2)] cursor-pointer">
                             BUY
                         </button>
-                        <button onclick="openTradeModal('SELL')" class="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 py-3 rounded-xl font-bold tracking-widest uppercase text-sm transition-all shadow-[0_0_15px_rgba(248,113,113,0.2)]">
+                        <button onclick="openTradeModal('SELL')" class="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/50 py-3 rounded-xl font-bold tracking-widest uppercase text-sm transition-all shadow-[0_0_15px_rgba(248,113,113,0.2)] cursor-pointer">
                             SELL
                         </button>
                     </div>
@@ -243,7 +243,7 @@
     <!-- LEADERBOARD MODAL -->
     <div id="leaderboardModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-[#0b0f19] border border-yellow-500/30 p-8 rounded-3xl w-full max-w-lg relative shadow-2xl">
-            <button onclick="closeLeaderboardModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold text-lg">&times;</button>
+            <button onclick="closeLeaderboardModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
             <h2 class="text-lg font-bold text-yellow-400 tracking-widest uppercase mb-2 text-center">🏆 Quantum Demo Leaderboard</h2>
             <p class="text-[10px] text-gray-400 text-center uppercase tracking-widest mb-6">Top Traders Ranked by Virtual Balance</p>
             
@@ -269,7 +269,7 @@
     <!-- ADVANCED TRADE EXECUTION MODAL -->
     <div id="tradeModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-[#0b0f19] border border-white/20 p-8 rounded-3xl w-full max-w-md relative shadow-2xl">
-            <button onclick="closeTradeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold">&times;</button>
+            <button onclick="closeTradeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold cursor-pointer">&times;</button>
             <h2 id="tradeModalTitle" class="text-lg font-bold text-cyan-400 tracking-widest uppercase mb-6 text-center">Confirm Order</h2>
             
             <div class="flex flex-col gap-4">
@@ -301,7 +301,7 @@
                     </div>
                 </div>
 
-                <button onclick="confirmExecuteTrade()" id="confirmTradeBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2">
+                <button onclick="confirmExecuteTrade()" id="confirmTradeBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2 cursor-pointer">
                     Open Position
                 </button>
             </div>
@@ -311,14 +311,14 @@
     <!-- AUTH MODAL -->
     <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-[#0b0f19] border border-white/20 p-8 rounded-3xl w-full max-w-md relative shadow-2xl">
-            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold">&times;</button>
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold cursor-pointer">&times;</button>
             <h2 id="modalTitle" class="text-lg font-bold text-cyan-400 tracking-widest uppercase mb-6 text-center">Login to Quantum AI</h2>
             
             <div class="flex flex-col gap-4">
                 <input type="email" id="authEmail" placeholder="Email Address" class="bg-black/60 border border-white/10 p-4 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-mono text-sm">
                 <input type="password" id="authPassword" placeholder="Password" class="bg-black/60 border border-white/10 p-4 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-mono text-sm">
                 
-                <button onclick="handleAuthSubmit()" id="authSubmitBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2">
+                <button onclick="handleAuthSubmit()" id="authSubmitBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2 cursor-pointer">
                     Login
                 </button>
                 
@@ -504,10 +504,10 @@
             document.getElementById('leaderboardModal').classList.add('hidden');
         }
 
-        // --- TRADE EXECUTION WITH SOUND EFFECTS ---
+        // --- TRADE EXECUTION WITH SOUND EFFECTS & MODAL FIX ---
         function openTradeModal(type) {
             if (!currentUser) {
-                playBeempError();
+                playBeep(200, 'sawtooth', 0.1);
                 alert('Please Login to access Demo Paper Trading!');
                 openAuthModal('login');
                 return;
@@ -515,10 +515,11 @@
             playBeep(520, 'square', 0.1);
             pendingTradeType = type;
             const coin = document.getElementById('coinSelector').value.toUpperCase() || 'BTC';
+            const currentLivePriceText = document.getElementById('currentPrice').innerText;
             
             document.getElementById('tradeModalTitle').innerText = `${type} ORDER SETUP`;
             document.getElementById('modalAsset').innerText = coin + '/USDT';
-            document.getElementById('modalPrice').innerText = document.getElementById('currentPrice').innerText;
+            document.getElementById('modalPrice').innerText = currentLivePriceText;
             document.getElementById('stopLossInput').value = '';
             document.getElementById('takeProfitInput').value = '';
             document.getElementById('tradeModal').classList.remove('hidden');
@@ -598,7 +599,7 @@
                         <td class="py-3 text-[11px]">SL: ${slText}<br>TP: ${tpText}</td>
                         <td class="py-3 font-bold" id="pnl-${trade.id}">Calculating...</td>
                         <td class="py-3 text-right">
-                            <button onclick="closeActiveTrade(${index})" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition text-[10px] uppercase font-bold">Close Position</button>
+                            <button onclick="closeActiveTrade(${index})" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition text-[10px] uppercase font-bold cursor-pointer">Close Position</button>
                         </td>
                     </tr>
                 `;
