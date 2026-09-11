@@ -224,13 +224,14 @@
                             <th class="pb-3">Type</th>
                             <th class="pb-3">Margin</th>
                             <th class="pb-3">Entry Price</th>
+                            <th class="pb-3">SL / TP</th>
                             <th class="pb-3">Live P&L ($)</th>
                             <th class="pb-3 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody id="activeTradesBody">
                         <tr>
-                            <td colspan="6" class="py-4 text-center text-gray-500">No active positions. Login and place a demo trade!</td>
+                            <td colspan="7" class="py-4 text-center text-gray-500">No active positions. Login and place a demo trade!</td>
                         </tr>
                     </tbody>
                 </table>
@@ -257,7 +258,7 @@
                     </thead>
                     <tbody id="leaderboardTableBody">
                         <tr>
-                            <td colspan="3" class="py-4 text-center text-gray-500">Loading Leaderboard Rankings...</td>
+                            <td colspan="3" class="py-4 text-center text-gray-500">Loading Rankings...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -265,7 +266,7 @@
         </div>
     </div>
 
-    <!-- ADVANCED TRADE EXECUTION MODAL -->
+    <!-- ADVANCED TRADE EXECUTION MODAL WITH STOP-LOSS & TAKE-PROFIT -->
     <div id="tradeModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-[#0b0f19] border border-white/20 p-8 rounded-3xl w-full max-w-md relative shadow-2xl">
             <button onclick="closeTradeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white font-bold">&times;</button>
@@ -281,10 +282,23 @@
                     <span id="modalPrice" class="text-white font-bold font-mono">--</span>
                 </div>
                 
-                <div class="flex flex-col gap-1 mt-2">
-                    <label class="text-xs text-gray-400 uppercase">Enter Margin Amount ($)</label>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-gray-400 uppercase">Margin Amount ($)</label>
                     <input type="number" id="tradeAmountInput" value="500" 
-                        class="bg-black/60 border border-white/10 p-4 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-mono text-lg font-bold text-center">
+                        class="bg-black/60 border border-white/10 p-3 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-mono text-base font-bold text-center">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] text-red-400 uppercase font-bold">Stop-Loss ($)</label>
+                        <input type="number" id="stopLossInput" placeholder="Optional" 
+                            class="bg-black/60 border border-red-500/30 p-3 rounded-xl text-white focus:outline-none focus:border-red-400 font-mono text-sm text-center">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[10px] text-green-400 uppercase font-bold">Take-Profit ($)</label>
+                        <input type="number" id="takeProfitInput" placeholder="Optional" 
+                            class="bg-black/60 border border-green-500/30 p-3 rounded-xl text-white focus:outline-none focus:border-green-400 font-mono text-sm text-center">
+                    </div>
                 </div>
 
                 <button onclick="confirmExecuteTrade()" id="confirmTradeBtn" class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition mt-2">
@@ -416,7 +430,7 @@
         async function openLeaderboardModal() {
             document.getElementById('leaderboardModal').classList.remove('hidden');
             const tbody = document.getElementById('leaderboardTableBody');
-            tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-gray-500">Fetching rankings from database...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-gray-500">Fetching rankings...</td></tr>`;
 
             try {
                 const { data, error } = await supabaseClient
@@ -428,8 +442,6 @@
                 if (error) throw error;
 
                 let leaderboardData = data || [];
-
-                // Fallback dummy records if database is empty so leaderboard looks pro
                 if (leaderboardData.length === 0) {
                     leaderboardData = [
                         { user_id: 'omie_pro_trader', balance: 24500.50 },
@@ -459,7 +471,6 @@
                 tbody.innerHTML = html;
             } catch (err) {
                 console.error(err);
-                // Fallback on error too
                 tbody.innerHTML = `
                     <tr class="border-b border-white/5 hover:bg-white/5 transition"><td class="py-3 pl-2">🥇</td><td class="py-3 font-mono">omie_pro_trader</td><td class="py-3 text-right font-mono text-green-400">$24,500.50</td></tr>
                     <tr class="border-b border-white/5 hover:bg-white/5 transition"><td class="py-3 pl-2">🥈</td><td class="py-3 font-mono">quantum_ai_bot</td><td class="py-3 text-right font-mono text-green-400">$18,920.00</td></tr>
@@ -472,7 +483,7 @@
             document.getElementById('leaderboardModal').classList.add('hidden');
         }
 
-        // --- TRADE EXECUTION & MANAGEMENT ---
+        // --- TRADE EXECUTION WITH STOP-LOSS & TAKE-PROFIT ---
         function openTradeModal(type) {
             if (!currentUser) {
                 alert('Please Login to access Demo Paper Trading!');
@@ -485,6 +496,8 @@
             document.getElementById('tradeModalTitle').innerText = `${type} ORDER SETUP`;
             document.getElementById('modalAsset').innerText = coin + '/USDT';
             document.getElementById('modalPrice').innerText = document.getElementById('currentPrice').innerText;
+            document.getElementById('stopLossInput').value = '';
+            document.getElementById('takeProfitInput').value = '';
             document.getElementById('tradeModal').classList.remove('hidden');
         }
 
@@ -494,6 +507,9 @@
 
         async function confirmExecuteTrade() {
             const tradeAmount = parseFloat(document.getElementById('tradeAmountInput').value);
+            const stopLoss = parseFloat(document.getElementById('stopLossInput').value) || null;
+            const takeProfit = parseFloat(document.getElementById('takeProfitInput').value) || null;
+
             if (isNaN(tradeAmount) || tradeAmount <= 0) {
                 alert('Please enter a valid margin amount.');
                 return;
@@ -523,12 +539,14 @@
                     coin: coin,
                     type: pendingTradeType,
                     margin: tradeAmount,
-                    entryPrice: entryPrice
+                    entryPrice: entryPrice,
+                    stopLoss: stopLoss,
+                    takeProfit: takeProfit
                 });
 
                 renderActiveTrades();
                 closeTradeModal();
-                alert(`Position Opened! ${pendingTradeType} ${coin} with $${tradeAmount} margin.`);
+                alert(`Position Opened! ${pendingTradeType} ${coin} with $${tradeAmount} margin.\nSL: ${stopLoss ? '$'+stopLoss : 'None'} | TP: ${takeProfit ? '$'+takeProfit : 'None'}`);
             } else {
                 alert('Trade execution failed.');
             }
@@ -537,13 +555,15 @@
         function renderActiveTrades() {
             const tbody = document.getElementById('activeTradesBody');
             if (activeTrades.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-gray-500">No active positions. Place a demo trade!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-gray-500">No active positions. Place a demo trade!</td></tr>`;
                 return;
             }
 
             let html = '';
             activeTrades.forEach((trade, index) => {
                 const badgeColor = trade.type === 'BUY' ? 'text-green-400 bg-green-500/10 border-green-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30';
+                const slText = trade.stopLoss ? `$${trade.stopLoss}` : '<span class="text-gray-500">None</span>';
+                const tpText = trade.takeProfit ? `$${trade.takeProfit}` : '<span class="text-gray-500">None</span>';
                 
                 html += `
                     <tr class="border-b border-white/5 hover:bg-white/5 transition">
@@ -551,6 +571,7 @@
                         <td class="py-3"><span class="px-2 py-1 rounded border text-[10px] font-bold ${badgeColor}">${trade.type}</span></td>
                         <td class="py-3">$${trade.margin.toFixed(2)}</td>
                         <td class="py-3">$${trade.entryPrice.toLocaleString()}</td>
+                        <td class="py-3 text-[11px]">SL: ${slText}<br>TP: ${tpText}</td>
                         <td class="py-3 font-bold" id="pnl-${trade.id}">Calculating...</td>
                         <td class="py-3 text-right">
                             <button onclick="closeActiveTrade(${index})" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 px-3 py-1 rounded border border-red-500/30 transition text-[10px] uppercase font-bold">Close Position</button>
@@ -645,7 +666,7 @@
         fetchLiveTicker();
         setInterval(fetchLiveTicker, 10000);
 
-        // --- CHART, WEBSOCKET & EMA ---
+        // --- CHART, WEBSOCKET & AUTO STOP-LOSS/TAKE-PROFIT CHECKER ---
         let chart = null;
         let candlestickSeries = null;
         let emaSeries = null;
@@ -777,14 +798,25 @@
                     const priceText = document.getElementById('currentPrice');
                     priceText.innerText = formatCurrency(livePrice);
 
-                    activeTrades.forEach(trade => {
+                    // Live P&L & Auto Stop-Loss / Take-Profit Trigger Check
+                    activeTrades.forEach((trade, idx) => {
                         const pnlEl = document.getElementById(`pnl-${trade.id}`);
                         if (pnlEl) {
                             let pnl = 0;
                             if (trade.type === 'BUY') {
                                 pnl = trade.margin * ((livePrice - trade.entryPrice) / trade.entryPrice);
+                                // Check SL / TP for BUY
+                                if ((trade.stopLoss && livePrice <= trade.stopLoss) || (trade.takeProfit && livePrice >= trade.takeProfit)) {
+                                    triggerAutoClose(idx, pnl, "SL/TP Triggered!");
+                                    return;
+                                }
                             } else {
                                 pnl = trade.margin * ((trade.entryPrice - livePrice) / trade.entryPrice);
+                                // Check SL / TP for SELL
+                                if ((trade.stopLoss && livePrice >= trade.stopLoss) || (trade.takeProfit && livePrice <= trade.takeProfit)) {
+                                    triggerAutoClose(idx, pnl, "SL/TP Triggered!");
+                                    return;
+                                }
                             }
                             pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
                             pnlEl.className = pnl >= 0 ? 'py-3 font-bold text-green-400' : 'py-3 font-bold text-red-400';
@@ -808,6 +840,22 @@
                     lastLivePrice = livePrice;
                 }
             } catch (error) { console.error(error); }
+        }
+
+        async function triggerAutoClose(index, pnl, reason) {
+            const trade = activeTrades[index];
+            const finalReturn = trade.margin + pnl;
+            currentWalletBalance += finalReturn;
+
+            await supabaseClient
+                .from('wallets')
+                .update({ balance: currentWalletBalance })
+                .eq('user_id', currentUser.id);
+
+            document.getElementById('walletBalance').innerText = '$' + currentWalletBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+            alert(`⚠️ ${reason}\nPosition Closed for ${trade.coin}.\nRealized P&L: $${pnl.toFixed(2)}`);
+            activeTrades.splice(index, 1);
+            renderActiveTrades();
         }
 
         async function getPrediction() {
